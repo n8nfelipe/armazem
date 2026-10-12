@@ -86,3 +86,20 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 O modelo é configurável por `OPENAI_MODEL`, portanto pode ser trocado sem alterar o código. A disponibilidade do identificador depende da conta e do catálogo do provedor. A integração usa a Responses API e mantém as mesmas restrições do agente: contexto operacional, sem credenciais ou assuntos fora do sistema. A chave deve permanecer no backend e nunca ser colocada no frontend ou no Git.
 
 No Kubernetes, altere `AGENT_PROVIDER` em `k8s/api.yaml` para `openai` e grave a chave no Secret `OPENAI_API_KEY` antes de aplicar os manifestos.
+
+## CI e versionamento SemVer
+
+O workflow [`ci-release.yml`](.github/workflows/ci-release.yml) é executado em pushes para `main` e também pode ser iniciado manualmente. Ele:
+
+- instala as dependências e executa os testes do backend;
+- instala as dependências e executa o build do frontend;
+- constrói as imagens Docker da API e da interface;
+- cria e publica automaticamente uma tag SemVer depois que todas as etapas passam.
+
+As mensagens de commit seguem a convenção Conventional Commits para definir o incremento:
+
+- `feat: ...` → nova versão minor;
+- `fix: ...`, `chore: ...` e outros commits → versão patch;
+- `feat!: ...` ou uma mensagem contendo `BREAKING CHANGE` → versão major.
+
+Sem tags anteriores, a primeira versão parte de `v0.0.0`. As tags são publicadas no formato `vX.Y.Z` usando o `GITHUB_TOKEN` com permissão mínima de escrita apenas no job de release.

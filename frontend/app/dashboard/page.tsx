@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AgentChat } from "@/app/agent-chat";
-import { getCurrentUser, getInventory, getProducts, getSales, logout } from "@/lib/products";
-import type { InventoryItem, Product, Sale } from "@/lib/products";
+import { getCurrentUser, getInventory, getProducts, getPurchaseOrders, getReplenishmentPlan, getSales, logout } from "@/lib/products";
+import type { InventoryItem, Product, PurchaseOrder, ReplenishmentItem, ReplenishmentPlan, Sale } from "@/lib/products";
 
 type Period = 1 | 7 | 30;
 type DayTotal = { date: Date; key: string; label: string; total: number };
@@ -145,12 +145,57 @@ function CategoryChart({ slices, total }: { slices: CategorySlice[]; total: numb
   );
 }
 
+function CriticalStockList({ items }: { items: ReplenishmentItem[] }) {
+  if (items.length === 0) return <div className="dashboard-list-empty">Nenhum produto no limite do estoque.</div>;
+
+  return (
+    <div className="dashboard-list" aria-label="Produtos no limite do estoque">
+      {items.map((item) => {
+        const minimum = item.minimum_stock ?? 10;
+        const status = item.available_quantity < minimum ? "Abaixo do mínimo" : "No mínimo";
+        return (
+          <div className="dashboard-list-row stock-alert-row" key={item.product_id}>
+            <div className="dashboard-list-main"><strong>{item.product_name}</strong><span>{item.product_sku} · {item.category}</span></div>
+            <div className="stock-alert-values"><span className={item.available_quantity < minimum ? "negative-number" : "warning-number"}>{integer.format(item.available_quantity)} un.</span><small>{status} · mín. {integer.format(minimum)}</small></div>
+            <span className={`priority-badge priority-${item.priority}`}>{item.priority}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const orderStatusLabels: Record<PurchaseOrder["status"], string> = {
+  rascunho: "Rascunho",
+  enviado: "Enviado",
+  recebido: "Recebido",
+  cancelado: "Cancelado",
+};
+
+function OrdersList({ orders }: { orders: PurchaseOrder[] }) {
+  if (orders.length === 0) return <div className="dashboard-list-empty">Nenhum pedido cadastrado.</div>;
+
+  return (
+    <div className="dashboard-list" aria-label="Pedidos recentes">
+      {orders.slice(0, 5).map((order) => (
+        <div className="dashboard-list-row order-dashboard-row" key={order.id}>
+          <div className="dashboard-list-main"><strong>Pedido #{String(order.id).padStart(4, "0")}</strong><span>{order.supplier_name} · {order.items.length} {order.items.length === 1 ? "item" : "itens"}</span></div>
+          <div className="order-dashboard-meta"><strong>{money.format(Number(order.total))}</strong><small>{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(order.created_at))}</small></div>
+          <span className={`status-badge status-${order.status}`}>{orderStatusLabels[order.status]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [period, setPeriod] = useState<Period>(7);
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [replenishmentPlan, setReplenishmentPlan] = useState<ReplenishmentPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [authorized, setAuthorized] = useState(false);
@@ -169,10 +214,18 @@ export default function DashboardPage() {
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const [productData, saleData, inventoryData] = await Promise.all([getProducts(), getSales(), getInventory()]);
+      const [productData, saleData, inventoryData, orderData, planData] = await Promise.all([
+        getProducts(),
+        getSales(),
+        getInventory(),
+        getPurchaseOrders(),
+        getReplenishmentPlan(),
+      ]);
       setProducts(productData);
       setSales(saleData);
       setInventory(inventoryData);
+      setOrders(orderData);
+      setReplenishmentPlan(planData);
       setError("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível carregar o dashboard.");
@@ -233,6 +286,16 @@ export default function DashboardPage() {
   const available = inventory.reduce((sum, item) => sum + item.available_quantity, 0);
   const negative = inventory.filter((item) => item.available_quantity < 0).length;
   const outOfStock = inventory.filter((item) => item.available_quantity === 0).length;
+  const criticalItems = useMemo(() => {
+    if (!replenishmentPlan) return [];
+    return replenishmentPlan.items
+      .filter((item) => item.available_quantity <= (item.minimum_stock ?? 10))
+      .sort((a, b) => a.available_quantity - b.available_quantity)
+      .slice(0, 5);
+  }, [replenishmentPlan]);
+  const recentOrders = useMemo(() => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [orders]);
+  const openOrders = orders.filter((order) => order.status === "rascunho" || order.status === "enviado").length;
+  const orderValue = orders.filter((order) => order.status === "rascunho" || order.status === "enviado").reduce((sum, order) => sum + Number(order.total), 0);
   const averageTicket = periodData.filtered.length ? periodData.revenue / periodData.filtered.length : 0;
   const periodLabel = period === 1 ? "hoje" : `últimos ${period} dias`;
 
@@ -274,6 +337,13 @@ export default function DashboardPage() {
               <div className="ledger-cell"><span>PRODUTOS</span><strong>{integer.format(products.length)}</strong><small>no catálogo</small></div>
             </section>
 
+            <section className="dashboard-index-strip" aria-label="Índices operacionais do estoque">
+              <div className="index-strip-item index-warning"><span>PRODUTOS NO LIMITE</span><strong>{integer.format(criticalItems.length)}</strong><small>mínimo configurado ou 10 un.</small></div>
+              <div className="index-strip-item"><span>PEDIDOS EM ABERTO</span><strong>{integer.format(openOrders)}</strong><small>rascunhos e enviados</small></div>
+              <div className="index-strip-item"><span>VALOR EM REPOSIÇÃO</span><strong>{money.format(orderValue)}</strong><small>pedidos em aberto</small></div>
+              <div className="index-strip-action"><Link href="/replenishment">Abrir recomendações ↗</Link><Link href="/purchase-orders">Ver pedidos ↗</Link></div>
+            </section>
+
             <div className="dashboard-grid">
               <section className="dashboard-panel sales-panel" aria-labelledby="sales-chart-title">
                 <div className="dashboard-panel-head"><div><span>VENDAS · {periodLabel.toUpperCase()}</span><h2 id="sales-chart-title">Evolução do faturamento</h2></div><strong>{money.format(periodData.revenue)}</strong></div>
@@ -296,6 +366,18 @@ export default function DashboardPage() {
                 <div className="signal-row"><span>01</span><div><strong>Ticket médio</strong><small>Média por venda em {periodLabel}</small></div><b>{money.format(averageTicket)}</b></div>
                 <div className="signal-row"><span>02</span><div><strong>Produto mais vendido</strong><small>{periodData.topProduct ? `${periodData.topProduct.quantity} unidades no período` : "Sem movimentação no período"}</small></div><b>{periodData.topProduct?.name ?? "—"}</b></div>
                 <div className="signal-row"><span>03</span><div><strong>Atenção ao estoque</strong><small>{negative} com saldo negativo · {outOfStock} sem saldo</small></div><b className={negative + outOfStock > 0 ? "negative-number" : ""}>{negative + outOfStock}</b></div>
+              </section>
+
+              <section className="dashboard-panel dashboard-list-panel" aria-labelledby="critical-stock-title">
+                <div className="dashboard-panel-head"><div><span>ATENÇÃO OPERACIONAL</span><h2 id="critical-stock-title">Estoque no limite</h2></div><Link href="/replenishment">Ver agente ↗</Link></div>
+                <CriticalStockList items={criticalItems} />
+                <p className="chart-footnote">Produtos abaixo ou no estoque mínimo, priorizados pela ação de reposição.</p>
+              </section>
+
+              <section className="dashboard-panel dashboard-list-panel" aria-labelledby="orders-title">
+                <div className="dashboard-panel-head"><div><span>COMPRAS RECENTES</span><h2 id="orders-title">Lista de pedidos</h2></div><Link href="/purchase-orders">Ver todos ↗</Link></div>
+                <OrdersList orders={recentOrders} />
+                <p className="chart-footnote">Últimos pedidos registrados, com status e valor total.</p>
               </section>
             </div>
           </>}

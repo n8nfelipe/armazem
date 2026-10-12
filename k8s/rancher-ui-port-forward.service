@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=%h/infra/estoque
 Environment=KUBE_CONTEXT=kind-rancher
-Environment=RANCHER_LOCAL_PORT=18443
+Environment=RANCHER_LOCAL_PORT=18444
 ExecStart=%h/infra/estoque/scripts/start-rancher-port-forward.sh
 Restart=always
 RestartSec=5

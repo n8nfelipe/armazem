@@ -76,7 +76,7 @@ O Rancher é executado no namespace `cattle-system` e, em clusters kind, o NodeP
 kubectl --context kind-rancher -n cattle-system port-forward service/rancher 18443:443
 ```
 
-Depois acesse `https://rancher.127.0.0.1.sslip.io:18443`. O certificado local pode exigir uma exceção no navegador. Para manter o acesso ativo automaticamente no login:
+Depois acesse `https://rancher.127.0.0.1.sslip.io:18444`. O certificado local pode exigir uma exceção no navegador. Para manter o acesso ativo automaticamente no login:
 
 ```bash
 cp k8s/rancher-ui-port-forward.service ~/.config/systemd/user/

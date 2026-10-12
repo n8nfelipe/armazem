@@ -39,7 +39,7 @@ O cluster kind deste ambiente expõe o controller NGINX na porta NodePort `30558
 echo "127.0.0.1 armazem.local" | sudo tee -a /etc/hosts
 ```
 
-Abra `http://armazem.local:30558`. A interface usará a API em `http://armazem.local:30558/api`.
+Abra `http://armazem.local:30558`. A interface usará a API em `/api`.
 
 Em clusters kind onde o NodePort não é publicado diretamente no host, use um encaminhamento do controller:
 
@@ -47,7 +47,7 @@ Em clusters kind onde o NodePort não é publicado diretamente no host, use um e
 kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
 ```
 
-Nesse caso, abra `http://armazem.local:18080`.
+Nesse caso, abra `http://armazem.localhost:18080` (não exige alteração no `/etc/hosts`) ou `http://armazem.local:18080`.
 
 ### Subir automaticamente no login
 

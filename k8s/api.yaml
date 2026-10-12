@@ -58,7 +58,7 @@ spec:
                   name: armazem-secrets
                   key: JWT_SECRET
             - name: FRONTEND_ORIGINS
-              value: http://armazem.local,http://armazem.local:30558,http://localhost:3000
+              value: http://armazem.local,http://armazem.local:30558,http://armazem.localhost:18080,http://localhost:3000
           readinessProbe:
             httpGet:
               path: /health

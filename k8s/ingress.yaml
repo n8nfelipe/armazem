@@ -16,6 +16,16 @@ spec:
                 name: armazem-web
                 port:
                   name: http
+    - host: armazem.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: armazem-web
+                port:
+                  name: http
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -29,6 +39,16 @@ spec:
   ingressClassName: nginx
   rules:
     - host: armazem.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: armazem-api
+                port:
+                  name: http
+    - host: armazem.localhost
       http:
         paths:
           - path: /api(/|$)(.*)

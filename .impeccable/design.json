@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T10:57:14-03:00",
+  "title": "Design System: Armazém",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1c2924", "tonalRamp": ["oklch(15% 0.02 155)", "oklch(25% 0.02 155)", "oklch(35% 0.02 155)", "oklch(45% 0.02 155)", "oklch(57% 0.02 155)", "oklch(70% 0.02 155)", "oklch(83% 0.02 155)", "oklch(95% 0.02 155)"] },
+      "ink-soft": { "role": "neutral", "displayName": "Soft Ink", "canonical": "#45544c", "tonalRamp": ["oklch(15% 0.02 155)", "oklch(25% 0.02 155)", "oklch(35% 0.02 155)", "oklch(45% 0.02 155)", "oklch(57% 0.02 155)", "oklch(70% 0.02 155)", "oklch(83% 0.02 155)", "oklch(95% 0.02 155)"] },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "#7f8982", "tonalRamp": ["oklch(15% 0.01 155)", "oklch(25% 0.01 155)", "oklch(35% 0.01 155)", "oklch(45% 0.01 155)", "oklch(57% 0.01 155)", "oklch(70% 0.01 155)", "oklch(83% 0.01 155)", "oklch(95% 0.01 155)"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#f5f4ef", "tonalRamp": ["oklch(15% 0.01 95)", "oklch(25% 0.01 95)", "oklch(35% 0.01 95)", "oklch(45% 0.01 95)", "oklch(57% 0.01 95)", "oklch(70% 0.01 95)", "oklch(83% 0.01 95)", "oklch(95% 0.01 95)"] },
+      "white": { "role": "neutral", "displayName": "Warm White", "canonical": "#fffefa", "tonalRamp": ["oklch(15% 0.01 95)", "oklch(25% 0.01 95)", "oklch(35% 0.01 95)", "oklch(45% 0.01 95)", "oklch(57% 0.01 95)", "oklch(70% 0.01 95)", "oklch(83% 0.01 95)", "oklch(95% 0.01 95)"] },
+      "line": { "role": "neutral", "displayName": "Rule", "canonical": "#dedfd7", "tonalRamp": ["oklch(15% 0.01 125)", "oklch(25% 0.01 125)", "oklch(35% 0.01 125)", "oklch(45% 0.01 125)", "oklch(57% 0.01 125)", "oklch(70% 0.01 125)", "oklch(83% 0.01 125)", "oklch(95% 0.01 125)"] },
+      "line-strong": { "role": "neutral", "displayName": "Strong Rule", "canonical": "#c9cec3", "tonalRamp": ["oklch(15% 0.01 135)", "oklch(25% 0.01 135)", "oklch(35% 0.01 135)", "oklch(45% 0.01 135)", "oklch(57% 0.01 135)", "oklch(70% 0.01 135)", "oklch(83% 0.01 135)", "oklch(95% 0.01 135)"] },
+      "forest": { "role": "primary", "displayName": "Forest", "canonical": "#294a3e", "tonalRamp": ["oklch(15% 0.05 160)", "oklch(25% 0.05 160)", "oklch(35% 0.05 160)", "oklch(45% 0.05 160)", "oklch(57% 0.05 160)", "oklch(70% 0.05 160)", "oklch(83% 0.05 160)", "oklch(95% 0.05 160)"] },
+      "forest-light": { "role": "primary", "displayName": "Forest Light", "canonical": "#e5ebe4", "tonalRamp": ["oklch(15% 0.02 150)", "oklch(25% 0.02 150)", "oklch(35% 0.02 150)", "oklch(45% 0.02 150)", "oklch(57% 0.02 150)", "oklch(70% 0.02 150)", "oklch(83% 0.02 150)", "oklch(95% 0.02 150)"] },
+      "amber": { "role": "secondary", "displayName": "Warehouse Amber", "canonical": "#c49342", "tonalRamp": ["oklch(15% 0.1 75)", "oklch(25% 0.1 75)", "oklch(35% 0.1 75)", "oklch(45% 0.1 75)", "oklch(57% 0.1 75)", "oklch(70% 0.1 75)", "oklch(83% 0.1 75)", "oklch(95% 0.1 75)"] },
+      "red": { "role": "status", "displayName": "Exception Red", "canonical": "#a8473e", "tonalRamp": ["oklch(15% 0.1 25)", "oklch(25% 0.1 25)", "oklch(35% 0.1 25)", "oklch(45% 0.1 25)", "oklch(57% 0.1 25)", "oklch(70% 0.1 25)", "oklch(83% 0.1 25)", "oklch(95% 0.1 25)"] },
+      "green": { "role": "status", "displayName": "Positive Green", "canonical": "#3d7458", "tonalRamp": ["oklch(15% 0.07 155)", "oklch(25% 0.07 155)", "oklch(35% 0.07 155)", "oklch(45% 0.07 155)", "oklch(57% 0.07 155)", "oklch(70% 0.07 155)", "oklch(83% 0.07 155)", "oklch(95% 0.07 155)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Page Title", "purpose": "Names the current operation." },
+      "body": { "displayName": "Body", "purpose": "Names, explanations, and form content." },
+      "operational": { "displayName": "Operational", "purpose": "Measurements, references, statuses, and small ledger labels." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "control-state", "value": "background 0.15s ease, border-color 0.15s ease", "purpose": "Short hover and focus state change on controls." }
+    ],
+    "breakpoints": [
+      { "name": "compact-desktop", "value": "1080px" },
+      { "name": "mobile", "value": "760px" },
+      { "name": "narrow-mobile", "value": "380px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main form or batch action.",
+      "html": "<button class=\"ds-button-primary\">Salvar regra →</button>",
+      "css": ".ds-button-primary{min-height:42px;padding:0 16px;border:1px solid transparent;border-radius:0;background:var(--forest,#294a3e);color:var(--white,#fffefa);font:600 13px 'Segoe UI',Arial,sans-serif;cursor:pointer;transition:background .15s ease}.ds-button-primary:hover{background:#1f3a2e}.ds-button-primary:focus-visible{outline:3px solid #b27d2b;outline-offset:3px}.ds-button-primary:active{background:#20372f}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary form action.",
+      "html": "<button class=\"ds-button-quiet\">Cancelar</button>",
+      "css": ".ds-button-quiet{min-height:42px;padding:0;border:0;border-radius:0;background:transparent;color:var(--ink-soft,#45544c);font:600 13px 'Segoe UI',Arial,sans-serif;cursor:pointer}.ds-button-quiet:hover{color:var(--ink,#1c2924)}.ds-button-quiet:focus-visible{outline:3px solid #b27d2b;outline-offset:3px}.ds-button-quiet:active{color:var(--forest,#294a3e)}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Square data entry field with a green focus border.",
+      "html": "<label class=\"ds-field-label\">Estoque mínimo<input class=\"ds-field\" value=\"10\" /></label>",
+      "css": ".ds-field-label{display:grid;gap:7px;color:#49564d;font:600 13px 'Segoe UI',Arial,sans-serif}.ds-field{height:42px;padding:0 11px;border:1px solid #d9ddd5;border-radius:0;background:#fff;color:var(--ink,#1c2924);font:400 14px 'Segoe UI',Arial,sans-serif;transition:border-color .16s ease}.ds-field:hover{border-color:var(--line-strong,#c9cec3)}.ds-field:focus{border-color:#63806d;outline:3px solid #b27d2b;outline-offset:3px}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "description": "Selected warehouse operation in the forest rail.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\">Agente</a></nav>",
+      "css": ".ds-rail{padding:10px;background:#20372f}.ds-nav-item{display:flex;align-items:center;min-height:44px;padding:0 10px;color:#fff;background:#344f43;box-shadow:inset 2px 0 var(--amber,#c49342);font:400 15px 'Segoe UI',Arial,sans-serif;text-decoration:none}.ds-nav-item:hover{background:#3b594a}.ds-nav-item:focus-visible{outline:3px solid #b27d2b;outline-offset:3px}.ds-nav-item:active{background:#294a3e}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Small bordered operational state label.",
+      "html": "<span class=\"ds-status-badge\">RASCUNHO</span>",
+      "css": ".ds-status-badge{display:inline-block;padding:2px 6px;border:1px solid #cfd5cc;border-radius:0;background:#f5f6f1;color:#56645b;font:10px 'SFMono-Regular',Consolas,'Liberation Mono',monospace;text-transform:uppercase}"
+    },
+    {
+      "name": "Ledger Row",
+      "kind": "card",
+      "refersTo": "table-frame",
+      "description": "Flat, ruled inventory record with a monospace measurement.",
+      "html": "<div class=\"ds-ledger-row\"><strong>Sabonete Vegetal</strong><span>74 UN</span></div>",
+      "css": ".ds-ledger-row{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:66px;padding:10px 15px;border:1px solid var(--line,#dedfd7);border-radius:0;background:var(--white,#fffefa);color:var(--ink,#1c2924)}.ds-ledger-row strong{font:600 14px 'Segoe UI',Arial,sans-serif}.ds-ledger-row span{color:var(--forest,#294a3e);font:500 13px 'SFMono-Regular',Consolas,'Liberation Mono',monospace}.ds-ledger-row:hover{background:#fafaf5}.ds-ledger-row:focus-within{outline:3px solid #b27d2b;outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warehouse Ledger",
+    "overview": "Armazém reads as an editorial operations console: restrained cream work surfaces, a forest-green navigation rail, fine rules, and compact records. The hierarchy helps an inventory operator scan quantities, identify exceptions, and act on a specific record. The replenishment screen extends this established language. The interface uses flat surfaces and structured density. Operational measurements, references, dates, and small labels use monospace; titles and explanatory text use the system sans stack. Color marks action and status while the ledger remains mostly neutral.",
+    "keyCharacteristics": [
+      "Cream workspace with a dark forest navigation rail.",
+      "Squared sheets, controls, rows, and status badges separated by fine borders.",
+      "Compact tabular records with prominent quantities and restrained supporting copy.",
+      "Mobile layouts that reflow records into readable field groups."
+    ],
+    "rules": [
+      { "name": "The Ledger Rule", "body": "Use fine rules and tonal surfaces to organize information; reserve saturated color for action, selection, and status.", "section": "colors" },
+      { "name": "The Measurement Rule", "body": "Show operational values in monospace and keep their units or context adjacent.", "section": "typography" }
+    ],
+    "dos": [
+      "Do reuse the cream, forest, border, and type tokens from the global stylesheet.",
+      "Do keep quantitative records compact, aligned, and readable on mobile.",
+      "Do pair color-coded statuses with visible text."
+    ],
+    "donts": [
+      "Don't introduce rounded cards or controls into the warehouse workspace.",
+      "Don't use decorative shadows to organize ordinary sheets and tables.",
+      "Don't hide record actions or measurement context when a table reflows."
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Armazém Kubernetes Ingress port-forward
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/infra/estoque
+Environment=KUBE_CONTEXT=kind-rancher
+Environment=INGRESS_LOCAL_PORT=18080
+ExecStart=%h/infra/estoque/scripts/start-ingress-port-forward.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

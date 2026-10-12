@@ -49,6 +49,21 @@ kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
 
 Nesse caso, abra `http://armazem.local:18080`.
 
+### Subir automaticamente no login
+
+Para manter o encaminhamento ativo e reiniciá-lo automaticamente:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp k8s/armazem-ingress-port-forward.service ~/.config/systemd/user/
+chmod +x scripts/start-ingress-port-forward.sh
+systemctl --user daemon-reload
+systemctl --user enable --now armazem-ingress-port-forward.service
+systemctl --user status armazem-ingress-port-forward.service
+```
+
+O serviço usa o contexto `kind-rancher` e a porta local `18080`. Para alterar, edite as variáveis `KUBE_CONTEXT` e `INGRESS_LOCAL_PORT` na unidade.
+
 Em clusters com o Ingress exposto diretamente na porta 80, use `http://armazem.local` sem a porta `30558`.
 
 ## Registry

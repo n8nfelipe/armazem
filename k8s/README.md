@@ -68,6 +68,24 @@ O serviço usa o contexto `kind-rancher` e a porta local `18080`. Para alterar, 
 
 Em clusters com o Ingress exposto diretamente na porta 80, use `http://armazem.local` sem a porta `30558`.
 
+## Acesso à interface do Rancher
+
+O Rancher é executado no namespace `cattle-system` e, em clusters kind, o NodePort pode não ser publicado diretamente no host. Para abrir a interface de administração localmente, use o encaminhamento HTTPS:
+
+```bash
+kubectl --context kind-rancher -n cattle-system port-forward service/rancher 18443:443
+```
+
+Depois acesse `https://rancher.127.0.0.1.sslip.io:18443`. O certificado local pode exigir uma exceção no navegador. Para manter o acesso ativo automaticamente no login:
+
+```bash
+cp k8s/rancher-ui-port-forward.service ~/.config/systemd/user/
+chmod +x scripts/start-rancher-port-forward.sh
+systemctl --user daemon-reload
+systemctl --user enable --now rancher-ui-port-forward.service
+systemctl --user status rancher-ui-port-forward.service
+```
+
 ## Registry
 
 Para publicar em um registry, substitua as imagens em `api.yaml` e `web.yaml` por referências como `ghcr.io/ORG/armazem-api:TAG` e `ghcr.io/ORG/armazem-web:TAG`, remova `imagePullPolicy: IfNotPresent` se desejar a política padrão do registry e configure `imagePullSecrets` quando necessário.

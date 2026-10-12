@@ -1,0 +1,16 @@
+[Unit]
+Description=Rancher Kubernetes UI HTTPS port-forward
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/infra/estoque
+Environment=KUBE_CONTEXT=kind-rancher
+Environment=RANCHER_LOCAL_PORT=18443
+ExecStart=%h/infra/estoque/scripts/start-rancher-port-forward.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

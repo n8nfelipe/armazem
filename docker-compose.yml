@@ -20,6 +20,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://estoque:estoque@db:5432/estoque
       FRONTEND_ORIGIN: http://localhost:3000
+      AGENT_PROVIDER: ${AGENT_PROVIDER:-local}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD no arquivo .env}
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}

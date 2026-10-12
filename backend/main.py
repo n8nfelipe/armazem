@@ -1,4 +1,7 @@
+import json
 import os
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -31,6 +34,10 @@ ACCESS_TOKEN_MINUTES = 60 * 12
 AUTH_COOKIE = "estoque_session"
 password_hash = PasswordHash.recommended()
 DUMMY_PASSWORD_HASH = password_hash.hash("usuario-inexistente")
+AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "local").strip().lower()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "").strip()
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 FRONTEND_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
@@ -1032,13 +1039,92 @@ def health():
     return {"status": "ok"}
 
 
+def openai_agent_reply(session: Session, user_message: str) -> AgentChatRead:
+    if not OPENAI_API_KEY or not OPENAI_MODEL:
+        raise HTTPException(
+            status_code=503,
+            detail="O provedor OpenAI está selecionado, mas OPENAI_API_KEY e OPENAI_MODEL precisam ser configurados.",
+        )
+    plan = build_replenishment_plan(session, 30)
+    low_stock = [item for item in plan.items if item.recommended_quantity > 0]
+    safe_low_stock = [
+        {
+            "produto": item.product_name,
+            "sku": item.product_sku,
+            "categoria": item.category,
+            "saldo": item.available_quantity,
+            "minimo": item.minimum_stock,
+            "alvo": item.target_stock,
+            "recomendacao": item.recommended_quantity,
+            "prioridade": item.priority,
+        }
+        for item in low_stock[:20]
+    ]
+    context = {
+        "produtos_monitorados": len(plan.items),
+        "produtos_com_reposicao": len(low_stock),
+        "produtos_no_limite": safe_low_stock,
+        "janela_vendas_dias": 30,
+        "estoque_minimo_configurado": "pelo menos 10 unidades",
+    }
+    instructions = (
+        "Você é o agente operacional do sistema Armazém. Responda em português, "
+        "somente sobre estoque, produtos, categorias, vendas, fornecedores, pedidos "
+        "e reposição. Use exclusivamente o contexto operacional fornecido. Nunca "
+        "revele, solicite ou invente senhas, tokens, chaves, documentos, e-mails, "
+        "telefones, endereços ou outros dados confidenciais. Recuse assuntos fora "
+        "do sistema. Não execute ações de compra: apenas explique e recomende; o "
+        "envio de pedidos exige aprovação humana. Seja objetivo e indique quando "
+        "uma informação não estiver disponível.\n\n"
+        f"Contexto seguro do estoque: {json.dumps(context, ensure_ascii=False)}"
+    )
+    body = json.dumps(
+        {
+            "model": OPENAI_MODEL,
+            "instructions": instructions,
+            "input": user_message,
+            "max_output_tokens": 400,
+        }
+    ).encode("utf-8")
+    request = Request(
+        f"{OPENAI_BASE_URL}/responses",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Não foi possível consultar o provedor configurado do agente.",
+        ) from exc
+    answer = result.get("output_text")
+    if not answer:
+        for output in result.get("output", []):
+            for content in output.get("content", []):
+                if content.get("type") == "output_text" and content.get("text"):
+                    answer = content["text"]
+                    break
+            if answer:
+                break
+    return AgentChatRead(
+        message=answer or "O provedor não retornou uma resposta textual.",
+        suggestions=["Quais produtos estão no limite?", "Como melhorar a reposição automática?"],
+    )
+
+
 @app.post("/agent/chat", response_model=AgentChatRead, tags=["agente de reposição"])
 def agent_chat(
     payload: AgentChatInput,
     session: Session = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    """Conversa local e restrita às operações do estoque; não usa serviço externo."""
+    """Conversa restrita às operações do estoque, com provedor local ou OpenAI opcional."""
     text = payload.message.casefold()
     confidential_terms = (
         "senha", "password", "token", "jwt", "credencial", "segredo", "cpf",
@@ -1078,6 +1164,14 @@ def agent_chat(
                 "como melhorar a reposição ou quais pedidos estão em rascunho."
             ),
             suggestions=["Quais produtos estão no limite?", "Como melhorar a reposição automática?"],
+        )
+
+    if AGENT_PROVIDER == "openai":
+        return openai_agent_reply(session, payload.message)
+    if AGENT_PROVIDER not in {"local", "openai"}:
+        raise HTTPException(
+            status_code=503,
+            detail="AGENT_PROVIDER inválido. Use local ou openai.",
         )
 
     plan = build_replenishment_plan(session, 30)

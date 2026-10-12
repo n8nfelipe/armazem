@@ -24,6 +24,8 @@ minikube image load armazem-web:local
 
 Antes de um ambiente compartilhado, edite `secret.yaml` ou substitua-o por um Secret gerenciado pelo seu cluster. Os valores versionados são apenas placeholders locais.
 
+O agente permanece local por padrão. Para habilitar o provedor OpenAI, defina `AGENT_PROVIDER: openai` no Deployment da API, preencha `OPENAI_API_KEY` no Secret e ajuste `OPENAI_MODEL` conforme o modelo disponível na sua conta. A chave é consumida somente pela API; nunca a inclua na interface web.
+
 ```bash
 kubectl apply -k k8s/
 kubectl -n armazem rollout status statefulset/postgres

@@ -66,3 +66,23 @@ Depois de cada venda, o agente reavalia os produtos vendidos. Quando o saldo pro
 O botão **AGENTE ATIVO**, no topo das telas autenticadas, abre um chat local. O chat pode explicar saldos, recomendações, vendas, fornecedores, pedidos e formas de melhorar as políticas de reposição. Ele recusa credenciais, senhas, documentos, contatos privados e assuntos fora do contexto do sistema. As respostas usam apenas as regras e os dados operacionais autorizados pela sessão.
 
 O agente não substitui a aprovação humana para envio de pedidos e não fornece informações confidenciais.
+
+### Provedor configurável
+
+O agente pode operar de duas formas:
+
+- `AGENT_PROVIDER=local` (padrão): regras determinísticas no próprio backend, sem chave ou chamada externa.
+- `AGENT_PROVIDER=openai`: usa o endpoint Responses API no backend. A chave nunca vai para o navegador; ela fica somente em variável de ambiente/Secret Kubernetes.
+
+Para habilitar no Docker Compose, configure no `.env`:
+
+```dotenv
+AGENT_PROVIDER=openai
+OPENAI_API_KEY=sua-chave-no-servidor
+OPENAI_MODEL=gpt-5.6-luna
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+O modelo é configurável por `OPENAI_MODEL`, portanto pode ser trocado sem alterar o código. A disponibilidade do identificador depende da conta e do catálogo do provedor. A integração usa a Responses API e mantém as mesmas restrições do agente: contexto operacional, sem credenciais ou assuntos fora do sistema. A chave deve permanecer no backend e nunca ser colocada no frontend ou no Git.
+
+No Kubernetes, altere `AGENT_PROVIDER` em `k8s/api.yaml` para `openai` e grave a chave no Secret `OPENAI_API_KEY` antes de aplicar os manifestos.

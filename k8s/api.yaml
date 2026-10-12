@@ -3,22 +3,30 @@ kind: Service
 metadata:
   name: armazem-api
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-api
+    app.kubernetes.io/part-of: armazem
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: armazem-api
   ports:
     - name: http
       port: 8000
-      targetPort: 8000
-  type: ClusterIP
+      targetPort: http
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: armazem-api
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-api
+    app.kubernetes.io/part-of: armazem
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 120
   selector:
     matchLabels:
       app.kubernetes.io/name: armazem-api
@@ -26,25 +34,37 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: armazem-api
+        app.kubernetes.io/part-of: armazem
     spec:
+      # Pods não precisam falar com a API do Kubernetes.
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
       containers:
         - name: api
           image: armazem-api:local
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c"]
-          args:
-            - >-
-              export DATABASE_URL="postgresql+psycopg://estoque:${POSTGRES_PASSWORD}@postgres:5432/estoque";
-              exec uvicorn main:app --host 0.0.0.0 --port 8000
+          # Sem shell: evita expor senha em /proc e mantém o
+          # comportamento do Dockerfile sem o --reload de dev.
+          command: ["uvicorn"]
+          args: ["main:app", "--host", "0.0.0.0", "--port", "8000"]
           ports:
             - name: http
               containerPort: 8000
+              protocol: TCP
           env:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: armazem-secrets
                   key: POSTGRES_PASSWORD
+            # Expansão do Kubernetes: $(POSTGRES_PASSWORD) resolve
+            # em tempo de criação do container, sem shell.
+            # FQDN evita depender do search-domain do namespace.
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://estoque:$(POSTGRES_PASSWORD)@postgres.armazem.svc.cluster.local:5432/estoque"
             - name: ADMIN_USERNAME
               value: admin
             - name: ADMIN_PASSWORD
@@ -70,15 +90,43 @@ spec:
               value: gpt-5.6-luna
             - name: OPENAI_BASE_URL
               value: https://api.openai.com/v1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # Habilite runAsNonRoot quando a imagem tiver USER
+            # não-root (ex.: Dockerfile com `USER appuser`).
+            # runAsNonRoot: true
+            # runAsUser: 65532
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 24
+            periodSeconds: 5
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 8
+            initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3

@@ -3,22 +3,30 @@ kind: Service
 metadata:
   name: armazem-web
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-web
+    app.kubernetes.io/part-of: armazem
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: armazem-web
   ports:
     - name: http
       port: 3000
-      targetPort: 3000
-  type: ClusterIP
+      targetPort: http
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: armazem-web
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-web
+    app.kubernetes.io/part-of: armazem
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 180
   selector:
     matchLabels:
       app.kubernetes.io/name: armazem-web
@@ -26,7 +34,13 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: armazem-web
+        app.kubernetes.io/part-of: armazem
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
       containers:
         - name: web
           image: armazem-web:local
@@ -35,18 +49,51 @@ spec:
             # Usa a mesma origem do Ingress, incluindo a porta quando houver NodePort.
             - name: NEXT_PUBLIC_API_URL
               value: /api
+            - name: PORT
+              value: "3000"
           ports:
             - name: http
               containerPort: 3000
+              protocol: TCP
+          resources:
+            # `npm run dev` consome bem mais que `next start`.
+            # Se migrar para build de produção, dá para reduzir limits.
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # Imagem de dev roda como root e escreve em .next.
+            # Só ative runAsNonRoot após adicionar USER no Dockerfile.
+            # runAsNonRoot: true
+            # runAsUser: 1000
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 36
+            periodSeconds: 5
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 5
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3

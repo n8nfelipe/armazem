@@ -3,22 +3,34 @@ kind: Service
 metadata:
   name: postgres
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: armazem
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: postgres
   ports:
     - name: postgres
       port: 5432
-      targetPort: 5432
+      targetPort: postgres
+      protocol: TCP
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: armazem
 spec:
   serviceName: postgres
   replicas: 1
+  revisionHistoryLimit: 5
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/name: postgres
@@ -26,13 +38,23 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: postgres
+        app.kubernetes.io/part-of: armazem
     spec:
+      automountServiceAccountToken: false
+      # Sem securityContext restritivo aqui: o entrypoint oficial
+      # do postgres precisa de root para chown/chmod do volume
+      # e depois faz drop para o usuário postgres. fsGroup,
+      # drop ALL e allowPrivilegeEscalation:false quebram o init
+      # em PVCs já criados (chmod: Operation not permitted).
+      terminationGracePeriodSeconds: 60
       containers:
         - name: postgres
           image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
           ports:
             - name: postgres
               containerPort: 5432
+              protocol: TCP
           env:
             - name: POSTGRES_DB
               value: estoque
@@ -43,16 +65,36 @@ spec:
                 secretKeyRef:
                   name: armazem-secrets
                   key: POSTGRES_PASSWORD
+            # Sem PGDATA custom: mantém compatibilidade com PVCs
+            # já criados em /var/lib/postgresql/data. Para clusters
+            # novos com problemas de permissão, use:
+            # PGDATA=/var/lib/postgresql/data/pgdata + subPath.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          # Sem securityContext restritivo no container pelos mesmos
+          # motivos do pod (entrypoint precisa de chmod/chown).
+          # Somente readiness: liveness matando o banco em pico
+          # de carga causa restart + recovery desnecessários.
+          # startupProbe cobre init lento (fsck do volume, etc).
+          startupProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U estoque -d estoque"]
+            failureThreshold: 24
+            periodSeconds: 5
+            timeoutSeconds: 3
           readinessProbe:
             exec:
               command: ["sh", "-c", "pg_isready -U estoque -d estoque"]
             initialDelaySeconds: 5
             periodSeconds: 5
-          livenessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U estoque -d estoque"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
@@ -60,6 +102,9 @@ spec:
     - metadata:
         name: postgres-data
       spec:
+        # Sem storageClassName: usa a default do cluster local
+        # (standard no kind, local-path no k3s/Rancher).
+        # Para prod, fixe uma classe + backup (ex.: managed DB).
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:

@@ -3,6 +3,16 @@ kind: Ingress
 metadata:
   name: armazem-web
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-web
+    app.kubernetes.io/part-of: armazem
+  annotations:
+    # SEM rewrite aqui: todo o tráfego (/, /_next/*, etc.) vai
+    # intacto para o Next. Um rewrite-target global quebraria os
+    # chunks JS (voltaria HTML para /_next/*.js e a página não hidrata).
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
 spec:
   ingressClassName: nginx
   rules:
@@ -32,9 +42,20 @@ kind: Ingress
 metadata:
   name: armazem-api
   namespace: armazem
+  labels:
+    app.kubernetes.io/name: armazem-api
+    app.kubernetes.io/part-of: armazem
   annotations:
+    # Reescreve /api/health -> /health para o FastAPI.
+    # Este rewrite vive SÓ neste Ingress (só rotas /api/*),
+    # para não afetar o tráfego da web. pathType fica
+    # ImplementationSpecific por depender do regex do nginx.
+    # Alternativa portátil: Prefix /api/ sem rewrite + root_path na API.
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
 spec:
   ingressClassName: nginx
   rules:

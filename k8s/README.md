@@ -35,21 +35,32 @@ kubectl -n armazem rollout status deployment/armazem-web
 
 ## Acesso local pelo Ingress
 
-O cluster kind deste ambiente expõe o controller NGINX na porta NodePort `30558`. Adicione o DNS local:
+Caminho padrão (funciona sem `sudo`): o serviço `armazem-ingress-port-forward` mantém o controller NGINX espelhado na porta local `18080`. Abra:
+
+```text
+http://armazem.localhost:18080
+```
+
+Esse domínio resolve para `127.0.0.1` sozinho e **não exige alteração no `/etc/hosts`**. A interface usará a API em `/api`. Verificação rápida:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://armazem.localhost:18080/api/health
+# esperado: 200
+```
+
+Alternativa via NodePort (somente se o NodePort for publicado no host **e** com DNS local):
 
 ```bash
 echo "127.0.0.1 armazem.local" | sudo tee -a /etc/hosts
 ```
 
-Abra `http://armazem.local:30558`. A interface usará a API em `/api`.
-
-Em clusters kind onde o NodePort não é publicado diretamente no host, use um encaminhamento do controller:
+Abra `http://armazem.local:30558`. Neste cluster kind o NodePort `30558` **não** é alcançável do host; prefira o port-forward `18080`. O encaminhamento manual equivalente é:
 
 ```bash
-kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
+kubectl --context kind-rancher -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
 ```
 
-Nesse caso, abra `http://armazem.localhost:18080` (não exige alteração no `/etc/hosts`) ou `http://armazem.local:18080`.
+Com o encaminhamento ativo, também vale `http://armazem.local:18080` (exige o `/etc/hosts` acima).
 
 ### Subir automaticamente no login
 
@@ -76,7 +87,7 @@ O Rancher é executado no namespace `cattle-system` e, em clusters kind, o NodeP
 kubectl --context kind-rancher -n cattle-system port-forward service/rancher 18443:443
 ```
 
-Depois acesse `https://rancher.127.0.0.1.sslip.io:18444`. O certificado local pode exigir uma exceção no navegador. Para manter o acesso ativo automaticamente no login:
+Depois acesse `https://rancher.127.0.0.1.sslip.io:18443`. O certificado local pode exigir uma exceção no navegador. O serviço systemd abaixo usa por padrão a porta `18444` (`RANCHER_LOCAL_PORT`); ajuste a URL conforme a porta escolhida. Para manter o acesso ativo automaticamente no login:
 
 ```bash
 cp k8s/rancher-ui-port-forward.service ~/.config/systemd/user/
@@ -91,3 +102,10 @@ systemctl --user status rancher-ui-port-forward.service
 Para publicar em um registry, substitua as imagens em `api.yaml` e `web.yaml` por referências como `ghcr.io/ORG/armazem-api:TAG` e `ghcr.io/ORG/armazem-web:TAG`, remova `imagePullPolicy: IfNotPresent` se desejar a política padrão do registry e configure `imagePullSecrets` quando necessário.
 
 O PostgreSQL está configurado com uma única réplica e PVC de 5 GiB para desenvolvimento e operação inicial. Faça backup e use uma oferta gerenciada ou StatefulSet endurecido antes de produção crítica.
+
+## Notas de hardening local
+
+* `api/web/postgres` têm `requests/limits`, `startupProbe` + `readiness/liveness` com `timeoutSeconds` explícitos e `automountServiceAccountToken: false`.
+* API monta `DATABASE_URL` via expansão `$(POSTGRES_PASSWORD)` (sem `sh -c`) e usa FQDN `postgres.armazem.svc.cluster.local`.
+* Postgres mantém só `startup/readiness` (`pg_isready`); sem `liveness` para evitar restart em pico de carga.
+* Dois Ingresses (`armazem-web` sem rewrite, `armazem-api` com rewrite `/api` → `/$2`). Não unificar: `rewrite-target` é por Ingress e um rewrite global redirecionaria `/_next/*.js` para `/`, entregando HTML no lugar do JS (página trava em “Validando sessão…”). Sem TLS local por padrão.

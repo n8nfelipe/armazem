@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: armazem-api
+  namespace: armazem
+spec:
+  selector:
+    app.kubernetes.io/name: armazem-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: armazem-api
+  namespace: armazem
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: armazem-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: armazem-api
+    spec:
+      containers:
+        - name: api
+          image: armazem-api:local
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              export DATABASE_URL="postgresql+psycopg://estoque:${POSTGRES_PASSWORD}@postgres:5432/estoque";
+              exec uvicorn main:app --host 0.0.0.0 --port 8000
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: armazem-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ADMIN_USERNAME
+              value: admin
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: armazem-secrets
+                  key: ADMIN_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: armazem-secrets
+                  key: JWT_SECRET
+            - name: FRONTEND_ORIGIN
+              value: http://localhost:3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10

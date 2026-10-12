@@ -31,16 +31,25 @@ kubectl -n armazem rollout status deployment/armazem-api
 kubectl -n armazem rollout status deployment/armazem-web
 ```
 
-## Acesso local
+## Acesso local pelo Ingress
 
-Em dois terminais:
+O cluster kind deste ambiente expõe o controller NGINX na porta NodePort `30558`. Adicione o DNS local:
 
 ```bash
-kubectl -n armazem port-forward service/armazem-api 8000:8000
-kubectl -n armazem port-forward service/armazem-web 3000:3000
+echo "127.0.0.1 armazem.local" | sudo tee -a /etc/hosts
 ```
 
-Abra `http://localhost:3000`. O navegador usará a API em `http://localhost:8000`, conforme `NEXT_PUBLIC_API_URL`.
+Abra `http://armazem.local:30558`. A interface usará a API em `http://armazem.local:30558/api`.
+
+Em clusters kind onde o NodePort não é publicado diretamente no host, use um encaminhamento do controller:
+
+```bash
+kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
+```
+
+Nesse caso, abra `http://armazem.local:18080`.
+
+Em clusters com o Ingress exposto diretamente na porta 80, use `http://armazem.local` sem a porta `30558`.
 
 ## Registry
 

@@ -31,6 +31,14 @@ ACCESS_TOKEN_MINUTES = 60 * 12
 AUTH_COOKIE = "estoque_session"
 password_hash = PasswordHash.recommended()
 DUMMY_PASSWORD_HASH = password_hash.hash("usuario-inexistente")
+FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_ORIGINS",
+        os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
+    ).split(",")
+    if origin.strip()
+]
 
 
 class Base(DeclarativeBase):
@@ -989,7 +997,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],

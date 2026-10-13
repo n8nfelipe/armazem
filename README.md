@@ -87,6 +87,31 @@ O modelo é configurável por `OPENAI_MODEL`, portanto pode ser trocado sem alte
 
 No Kubernetes, altere `AGENT_PROVIDER` em `k8s/api.yaml` para `openai` e grave a chave no Secret `OPENAI_API_KEY` antes de aplicar os manifestos.
 
+## Code review agêntico no GitHub
+
+O review usa a integração nativa do Codex com GitHub e o plano da conta ChatGPT,
+respeitando os limites de uso do plano. As regras específicas do Armazém estão
+em [`AGENTS.md`](AGENTS.md), incluindo estoque, histórico, reposição, aprovação
+humana e proteção dos dados do chat.
+
+Para ativar:
+
+1. Entre no ChatGPT com a conta que tem o plano Codex e conecte o repositório
+   `n8nfelipe/armazem` à integração GitHub do Codex.
+2. Abra as [configurações de code review](https://chatgpt.com/settings/code-review),
+   selecione o repositório e habilite **Automatic review** em **Review code**.
+3. Escolha quais PRs serão revisadas. Nas preferências pessoais, habilite
+   **Automatic review** e ajuste **Review trigger** para os eventos desejados.
+4. Em uma pull request, comente `@codex review` para validar a integração ou
+   solicitar outra revisão manualmente.
+
+Essa configuração usa o plano Codex e não precisa de `OPENAI_API_KEY` nos secrets
+do GitHub. A chave citada na seção do agente de reposição atende apenas ao
+provedor opcional da aplicação. As revisões orientam o autor da PR; testes,
+aprovações humanas e regras de proteção da branch continuam independentes.
+
+Guia oficial: [Review GitHub pull requests with Codex](https://learn.chatgpt.com/docs/third-party/github).
+
 ## CI e versionamento SemVer
 
 O workflow [`ci-release.yml`](.github/workflows/ci-release.yml) é executado em pushes para `main` e também pode ser iniciado manualmente. Ele:

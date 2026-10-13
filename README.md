@@ -100,9 +100,9 @@ Para ativar:
    `n8nfelipe/armazem` à integração GitHub do Codex. Se o bot pedir um ambiente,
    crie um para esse repositório em **Configurações → Codex Cloud → Criar ambiente**.
 2. Abra as [configurações de code review](https://chatgpt.com/settings/code-review),
-   selecione o repositório e habilite **Automatic review** em **Review code**.
-3. No repositório, escolha **Revisar → Todos os PRs** e **Gatilho → A cada push**
-   para revisar PRs de qualquer autor e também os novos commits. Essas opções
+   selecione o repositório e habilite **Revisão automática** em **Revisar código**.
+3. No repositório, escolha **Revisar → PRs da equipe** e **Gatilho → A cada push**
+   para revisar PRs dos colaboradores e também os novos commits. Essas opções
    do repositório têm prioridade sobre as preferências pessoais.
 4. Em uma pull request, comente `@codex review` para validar a integração ou
    solicitar outra revisão manualmente.

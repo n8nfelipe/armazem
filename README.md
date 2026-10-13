@@ -97,7 +97,8 @@ humana e proteção dos dados do chat.
 Para ativar:
 
 1. Entre no ChatGPT com a conta que tem o plano Codex e conecte o repositório
-   `n8nfelipe/armazem` à integração GitHub do Codex.
+   `n8nfelipe/armazem` à integração GitHub do Codex. Se o bot pedir um ambiente,
+   crie um para esse repositório em **Configurações → Codex Cloud → Criar ambiente**.
 2. Abra as [configurações de code review](https://chatgpt.com/settings/code-review),
    selecione o repositório e habilite **Automatic review** em **Review code**.
 3. Escolha quais PRs serão revisadas. Nas preferências pessoais, habilite

@@ -561,7 +561,11 @@ def find_supplier_by_document(session: Session, document: str) -> Supplier | Non
     )
 
 
-def build_sale_items(session: Session, inputs: list[SaleItemInput]) -> list[SaleItem]:
+def build_sale_items(
+    session: Session,
+    inputs: list[SaleItemInput],
+    price_snapshots: dict[int, Decimal] | None = None,
+) -> list[SaleItem]:
     product_ids = [item.product_id for item in inputs]
     products = {
         product.id: product
@@ -581,7 +585,9 @@ def build_sale_items(session: Session, inputs: list[SaleItemInput]) -> list[Sale
             product_name=products[item.product_id].name,
             product_sku=products[item.product_id].sku,
             quantity=item.quantity,
-            unit_price=products[item.product_id].price,
+            unit_price=(price_snapshots or {}).get(
+                item.product_id, products[item.product_id].price
+            ),
         )
         for item in inputs
     ]
@@ -1569,9 +1575,14 @@ def update_sale(
     )
     if sale is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada.")
+    price_snapshots = {
+        item.product_id: item.unit_price
+        for item in sale.items
+        if item.product_id is not None
+    }
     sale.customer_name = payload.customer_name
     sale.notes = payload.notes
-    sale.items = build_sale_items(session, payload.items)
+    sale.items = build_sale_items(session, payload.items, price_snapshots)
     session.commit()
     session.refresh(sale)
     create_replenishment_orders(
@@ -1703,6 +1714,11 @@ def update_purchase_order(
     )
     if order is None:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    if order.status == "recebido":
+        raise HTTPException(
+            status_code=409,
+            detail="Pedidos recebidos são imutáveis para preservar o histórico do estoque.",
+        )
     supplier = session.get(Supplier, payload.supplier_id)
     if supplier is None:
         raise HTTPException(status_code=422, detail="Selecione um fornecedor cadastrado.")
@@ -1731,6 +1747,11 @@ def delete_purchase_order(
     order = session.get(PurchaseOrder, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    if order.status == "recebido":
+        raise HTTPException(
+            status_code=409,
+            detail="Pedidos recebidos são imutáveis para preservar o histórico do estoque.",
+        )
     session.delete(order)
     session.commit()
 

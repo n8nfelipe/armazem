@@ -67,7 +67,11 @@ export default function SalesPage() {
   }, [authorized, search, refresh]);
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
-  const previewTotal = form.items.reduce((total, item) => total + Number(productMap.get(item.product_id)?.price ?? 0) * item.quantity, 0);
+  function itemPrice(productId: number) {
+    const historicalItem = editing?.items.find((item) => item.product_id === productId);
+    return Number(historicalItem?.unit_price ?? productMap.get(productId)?.price ?? 0);
+  }
+  const previewTotal = form.items.reduce((total, item) => total + itemPrice(item.product_id) * item.quantity, 0);
   const revenue = sales.reduce((total, sale) => total + Number(sale.total), 0);
 
   function changeItem(index: number, field: keyof SaleItemInput, value: number) {
@@ -173,14 +177,13 @@ export default function SalesPage() {
               <div className="sale-items-heading"><span>ITENS DA VENDA</span><button type="button" onClick={addItem} disabled={form.items.length >= products.length}>+ Adicionar produto</button></div>
               <div className="sale-items">
                 {form.items.map((item, index) => {
-                  const selected = productMap.get(item.product_id);
                   const usedIds = new Set(form.items.map((entry) => entry.product_id));
                   return <div className="sale-item-editor" key={index}>
                     <span className="sale-item-index">{(index + 1).toString().padStart(2, "0")}</span>
                     <label className="field"><span>Produto <b>*</b></span><select value={item.product_id || ""} onChange={(event) => changeItem(index, "product_id", Number(event.target.value))} required><option value="">Selecione um produto</option>{products.map((product) => <option key={product.id} value={product.id} disabled={usedIds.has(product.id) && product.id !== item.product_id}>{product.name} · {product.sku}</option>)}</select></label>
                     <label className="field"><span>Quantidade <b>*</b></span><input type="number" min="1" max="9999" step="1" value={item.quantity} onChange={(event) => changeItem(index, "quantity", Number(event.target.value))} required /></label>
-                    <div className="sale-item-price"><span>PREÇO UNITÁRIO</span><strong>{money.format(Number(selected?.price ?? 0))}</strong></div>
-                    <div className="sale-item-price"><span>SUBTOTAL</span><strong>{money.format(Number(selected?.price ?? 0) * item.quantity)}</strong></div>
+                    <div className="sale-item-price"><span>PREÇO UNITÁRIO</span><strong>{money.format(itemPrice(item.product_id))}</strong></div>
+                    <div className="sale-item-price"><span>SUBTOTAL</span><strong>{money.format(itemPrice(item.product_id) * item.quantity)}</strong></div>
                     <button className="sale-item-remove" type="button" onClick={() => removeItem(index)} disabled={form.items.length === 1} aria-label={`Remover item ${index + 1}`}>Remover</button>
                   </div>;
                 })}

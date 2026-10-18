@@ -533,6 +533,14 @@ def get_session():
         yield session
 
 
+LIKE_ESCAPE = "\\"
+
+
+def like_pattern(search: str) -> str:
+    escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
 def find_category(session: Session, name: str) -> Category | None:
     return session.scalar(
         select(Category).where(func.lower(Category.name) == name.strip().lower())
@@ -1267,9 +1275,11 @@ def list_products(
 ):
     statement = select(Product).order_by(Product.name.asc())
     if search and search.strip():
-        term = f"%{search.strip()}%"
+        term = like_pattern(search.strip())
         statement = statement.where(
-            Product.name.ilike(term) | Product.sku.ilike(term) | Product.category.ilike(term)
+            Product.name.ilike(term, escape=LIKE_ESCAPE)
+            | Product.sku.ilike(term, escape=LIKE_ESCAPE)
+            | Product.category.ilike(term, escape=LIKE_ESCAPE)
         )
     if category and category.strip():
         statement = statement.where(Product.category == category.strip())
@@ -1284,7 +1294,9 @@ def list_categories(
 ):
     statement = select(Category).order_by(Category.name.asc())
     if search and search.strip():
-        statement = statement.where(Category.name.ilike(f"%{search.strip()}%"))
+        statement = statement.where(
+            Category.name.ilike(like_pattern(search.strip()), escape=LIKE_ESCAPE)
+        )
     categories = session.scalars(statement).all()
     return [category_to_read(session, category) for category in categories]
 
@@ -1396,12 +1408,12 @@ def list_suppliers(
 ):
     statement = select(Supplier).order_by(Supplier.name.asc())
     if search and search.strip():
-        term = f"%{search.strip()}%"
+        term = like_pattern(search.strip())
         statement = statement.where(
-            Supplier.name.ilike(term)
-            | Supplier.document.ilike(term)
-            | Supplier.contact_name.ilike(term)
-            | Supplier.email.ilike(term)
+            Supplier.name.ilike(term, escape=LIKE_ESCAPE)
+            | Supplier.document.ilike(term, escape=LIKE_ESCAPE)
+            | Supplier.contact_name.ilike(term, escape=LIKE_ESCAPE)
+            | Supplier.email.ilike(term, escape=LIKE_ESCAPE)
         )
     return session.scalars(statement).all()
 
@@ -1508,13 +1520,13 @@ def list_sales(
     )
     if search and search.strip():
         raw_term = search.strip()
-        term = f"%{raw_term}%"
+        term = like_pattern(raw_term)
         conditions = [
-            Sale.customer_name.ilike(term),
+            Sale.customer_name.ilike(term, escape=LIKE_ESCAPE),
             Sale.items.any(
                 or_(
-                    SaleItem.product_name.ilike(term),
-                    SaleItem.product_sku.ilike(term),
+                    SaleItem.product_name.ilike(term, escape=LIKE_ESCAPE),
+                    SaleItem.product_sku.ilike(term, escape=LIKE_ESCAPE),
                 )
             ),
         ]
@@ -1626,15 +1638,15 @@ def list_purchase_orders(
     )
     if search and search.strip():
         raw_term = search.strip()
-        term = f"%{raw_term}%"
+        term = like_pattern(raw_term)
         conditions = [
-            PurchaseOrder.supplier_name.ilike(term),
-            PurchaseOrder.supplier_document.ilike(term),
-            PurchaseOrder.status.ilike(term),
+            PurchaseOrder.supplier_name.ilike(term, escape=LIKE_ESCAPE),
+            PurchaseOrder.supplier_document.ilike(term, escape=LIKE_ESCAPE),
+            PurchaseOrder.status.ilike(term, escape=LIKE_ESCAPE),
             PurchaseOrder.items.any(
                 or_(
-                    PurchaseOrderItem.product_name.ilike(term),
-                    PurchaseOrderItem.product_sku.ilike(term),
+                    PurchaseOrderItem.product_name.ilike(term, escape=LIKE_ESCAPE),
+                    PurchaseOrderItem.product_sku.ilike(term, escape=LIKE_ESCAPE),
                 )
             ),
         ]
@@ -1793,11 +1805,11 @@ def list_inventory(
         .order_by(Product.name.asc())
     )
     if search and search.strip():
-        term = f"%{search.strip()}%"
+        term = like_pattern(search.strip())
         statement = statement.where(
-            Product.name.ilike(term)
-            | Product.sku.ilike(term)
-            | Product.category.ilike(term)
+            Product.name.ilike(term, escape=LIKE_ESCAPE)
+            | Product.sku.ilike(term, escape=LIKE_ESCAPE)
+            | Product.category.ilike(term, escape=LIKE_ESCAPE)
         )
     return [
         InventoryRead(

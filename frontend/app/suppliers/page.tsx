@@ -154,12 +154,14 @@ export default function SuppliersPage() {
         <Link className="nav-item" href="/purchase-orders">Pedidos</Link>
         <Link className="nav-item" href="/inventory">Estoque</Link>
         <Link className="nav-item" href="/replenishment">Agente</Link>
+        <div className="side-section-label">CONTA</div>
+        <Link className="nav-item" href="/account">Conta</Link>
         <div className="side-note"><span className="status-dot" /><span>Catálogo conectado</span></div>
         <div className="sidebar-bottom"><span className="sidebar-rule" /><span className="sidebar-caption">CADASTRO DE FORNECEDORES</span><span className="sidebar-edition">PAINEL DE OPERAÇÕES&nbsp; / &nbsp;03</span></div>
       </aside>
 
       <main className="main-content" id="suppliers">
-        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Fornecedores</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><span className="user-name">{username}</span><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
+        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Fornecedores</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><Link className="user-name" href="/account">{username}</Link><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
 
         <div className="content-wrap">
           <section className="page-heading"><div><h1>Fornecedores</h1><p className="heading-copy">Mantenha parceiros e contatos de compra organizados.</p></div><div className="catalog-total"><span className="total-number">{suppliers.length.toString().padStart(2, "0")}</span><span>fornecedores</span></div></section>

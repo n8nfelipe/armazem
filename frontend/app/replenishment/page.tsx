@@ -188,13 +188,13 @@ export default function ReplenishmentPage() {
       <aside className="sidebar">
         <Link className="brand" href="/dashboard" aria-label="Armazém, agente de reposição"><span className="brand-mark"><AgentMark /></span><span className="brand-name">armazém<span>.</span></span></Link>
         <div className="side-section-label">GESTÃO</div>
-        <Link className="nav-item" href="/dashboard">Dashboard</Link><Link className="nav-item" href="/">Produtos</Link><Link className="nav-item" href="/categories">Categorias</Link><Link className="nav-item" href="/suppliers">Fornecedores</Link><Link className="nav-item" href="/sales">Vendas</Link><Link className="nav-item" href="/purchase-orders">Pedidos</Link><Link className="nav-item" href="/inventory">Estoque</Link><Link className="nav-item active" href="/replenishment" aria-current="page">Agente</Link>
+        <Link className="nav-item" href="/dashboard">Dashboard</Link><Link className="nav-item" href="/">Produtos</Link><Link className="nav-item" href="/categories">Categorias</Link><Link className="nav-item" href="/suppliers">Fornecedores</Link><Link className="nav-item" href="/sales">Vendas</Link><Link className="nav-item" href="/purchase-orders">Pedidos</Link><Link className="nav-item" href="/inventory">Estoque</Link><Link className="nav-item active" href="/replenishment" aria-current="page">Agente</Link><div className="side-section-label">CONTA</div><Link className="nav-item" href="/account">Conta</Link>
         <div className="side-note"><span className="status-dot" /><span>Análise local, sem API</span></div>
         <div className="sidebar-bottom"><span className="sidebar-rule" /><span className="sidebar-caption">AGENTE DE REPOSIÇÃO</span><span className="sidebar-edition">PAINEL DE OPERAÇÕES&nbsp; / &nbsp;07</span></div>
       </aside>
 
       <main className="main-content" id="replenishment">
-        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Agente de reposição</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">ANÁLISE&nbsp; · &nbsp;LOCAL</span><span className="user-name">{username}</span><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
+        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Agente de reposição</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">ANÁLISE&nbsp; · &nbsp;LOCAL</span><Link className="user-name" href="/account">{username}</Link><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
         <div className="content-wrap">
           <section className="page-heading"><div><h1>Agente de reposição</h1><p className="heading-copy">Prevê a necessidade, considera pedidos abertos e monta rascunhos por fornecedor.</p></div><div className="catalog-total"><span className="total-number">{plan?.recommendation_count ?? 0}</span><span>ações sugeridas</span></div></section>
 

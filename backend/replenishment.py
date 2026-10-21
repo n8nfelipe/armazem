@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_CEILING
+from decimal import ROUND_CEILING, Decimal
+from typing import Literal
+
+CalculationPriority = Literal["normal", "media", "alta", "critica"]
 
 
 @dataclass(frozen=True)
@@ -8,7 +11,7 @@ class ReplenishmentCalculation:
     lead_time_demand: int
     projected_quantity: int
     recommended_quantity: int
-    priority: str
+    priority: CalculationPriority
     reason: str
 
 
@@ -35,7 +38,7 @@ def calculate_replenishment(
     recommended = min(max(target_stock - projected, 0), 999999) if should_reorder else 0
 
     if recommended == 0:
-        priority = "normal"
+        priority: CalculationPriority = "normal"
         reason = (
             f"Projeção de {projected} un. permanece acima do mínimo de "
             f"{minimum_stock} un."

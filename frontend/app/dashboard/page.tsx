@@ -315,12 +315,14 @@ export default function DashboardPage() {
         <Link className="nav-item" href="/purchase-orders">Pedidos</Link>
         <Link className="nav-item" href="/inventory">Estoque</Link>
         <Link className="nav-item" href="/replenishment">Agente</Link>
+        <div className="side-section-label">CONTA</div>
+        <Link className="nav-item" href="/account">Conta</Link>
         <div className="side-note"><span className="status-dot" /><span>Indicadores atualizados</span></div>
         <div className="sidebar-bottom"><span className="sidebar-rule" /><span className="sidebar-caption">CENTRAL DE INDICADORES</span><span className="sidebar-edition">PAINEL DE OPERAÇÕES&nbsp; / &nbsp;00</span></div>
       </aside>
 
       <main className="main-content" id="dashboard">
-        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Dashboard</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">VISÃO&nbsp; · &nbsp;BR</span><span className="user-name">{username}</span><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
+        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Dashboard</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">VISÃO&nbsp; · &nbsp;BR</span><Link className="user-name" href="/account">{username}</Link><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
         <div className="content-wrap dashboard-content">
           <section className="dashboard-heading">
             <div><h1>Visão geral</h1><p className="heading-copy">Estoque, vendas e composição do catálogo em um só lugar.</p></div>

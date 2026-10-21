@@ -1,21 +1,53 @@
 import json
 import os
+from contextlib import asynccontextmanager
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
+from typing import Literal, cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from contextlib import asynccontextmanager
-from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
-from typing import Literal
 
 import jwt
 from fastapi import Cookie, Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, create_engine, func, or_, select, update
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    create_engine,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, selectinload, sessionmaker
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    Session,
+    mapped_column,
+    relationship,
+    selectinload,
+    sessionmaker,
+)
 
 from replenishment import calculate_replenishment
 
@@ -25,7 +57,7 @@ DATABASE_URL = os.getenv(
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not ADMIN_PASSWORD or not JWT_SECRET:
     raise RuntimeError("ADMIN_PASSWORD e JWT_SECRET precisam ser definidos no arquivo .env")
@@ -46,6 +78,18 @@ FRONTEND_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+
+
+def rate_limit_client(request: HttpRequest) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "cliente-desconhecido"
+
+
+limiter = Limiter(key_func=rate_limit_client, headers_enabled=True)
 
 
 class Base(DeclarativeBase):
@@ -524,6 +568,20 @@ class LoginInput(BaseModel):
     password: SecretStr = Field(min_length=1, max_length=128)
 
 
+class AccountUpdateInput(BaseModel):
+    current_password: SecretStr = Field(min_length=1, max_length=128)
+    username: str = Field(min_length=2, max_length=80)
+    new_password: SecretStr | None = Field(default=None, min_length=8, max_length=128)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Este campo é obrigatório")
+        return value
+
+
 class UserRead(BaseModel):
     username: str
 
@@ -668,7 +726,7 @@ def purchase_order_to_read(order: PurchaseOrder) -> PurchaseOrderRead:
         supplier_id=order.supplier_id,
         supplier_name=order.supplier_name,
         supplier_document=order.supplier_document,
-        status=order.status,
+        status=cast(PurchaseOrderStatus, order.status),
         expected_date=order.expected_date,
         notes=order.notes,
         created_at=order.created_at,
@@ -732,7 +790,7 @@ def build_replenishment_plan(
         .group_by(PurchaseOrderItem.product_id)
         .subquery()
     )
-    window_start = datetime.now(timezone.utc) - timedelta(days=window_days)
+    window_start = datetime.now(UTC) - timedelta(days=window_days)
     recent_sold = (
         select(
             SaleItem.product_id.label("product_id"),
@@ -886,7 +944,7 @@ def build_replenishment_plan(
     recommended = [item for item in items if item.recommended_quantity > 0]
     return ReplenishmentPlanRead(
         window_days=window_days,
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         items=items,
         configured_count=sum(item.configured for item in items),
         recommendation_count=len(recommended),
@@ -933,7 +991,10 @@ def create_replenishment_orders(
     }
     grouped: dict[int, list[ReplenishmentItemRead]] = {}
     for item in eligible:
-        grouped.setdefault(item.supplier_id, []).append(item)
+        item_supplier_id = item.supplier_id
+        if item_supplier_id is None:
+            continue
+        grouped.setdefault(item_supplier_id, []).append(item)
 
     orders: list[PurchaseOrder] = []
     for supplier_id, group_items in grouped.items():
@@ -1016,6 +1077,22 @@ app = FastAPI(
     version="1.6.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+
+
+async def rate_limit_exceeded(request: HttpRequest, exc: Exception) -> Response:
+    response = JSONResponse(
+        {"detail": "Muitas tentativas. Aguarde um minuto e tente novamente."},
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+    current_limit = getattr(request.state, "view_rate_limit", None)
+    if current_limit is None:
+        return response
+    return limiter._inject_headers(response, current_limit)
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
@@ -1226,8 +1303,24 @@ def agent_chat(
     return AgentChatRead(message=message, suggestions=suggestions)
 
 
+def issue_auth_cookie(response: Response, username: str) -> None:
+    expires_at = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
+    token = jwt.encode({"sub": username, "exp": expires_at}, JWT_SECRET, algorithm="HS256")
+    response.set_cookie(
+        key=AUTH_COOKIE,
+        value=token,
+        httponly=True,
+        secure=os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true",
+        samesite="lax",
+        max_age=ACCESS_TOKEN_MINUTES * 60,
+        path="/",
+    )
+
+
 @app.post("/auth/login", response_model=UserRead, tags=["autenticação"])
+@limiter.limit("5/minute")
 def login(
+    request: HttpRequest,
     payload: LoginInput,
     response: Response,
     session: Session = Depends(get_session),
@@ -1240,24 +1333,54 @@ def login(
     if not password_hash.verify(submitted_password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
 
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
-    token = jwt.encode(
-        {"sub": user.username, "exp": expires_at}, JWT_SECRET, algorithm="HS256"
-    )
-    response.set_cookie(
-        key=AUTH_COOKIE,
-        value=token,
-        httponly=True,
-        secure=os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true",
-        samesite="lax",
-        max_age=ACCESS_TOKEN_MINUTES * 60,
-        path="/",
-    )
+    issue_auth_cookie(response, user.username)
     return UserRead(username=user.username)
 
 
 @app.get("/auth/me", response_model=UserRead, tags=["autenticação"])
 def read_current_user(user: User = Depends(get_current_user)):
+    return UserRead(username=user.username)
+
+
+@app.put("/auth/me", response_model=UserRead, tags=["autenticação"])
+@limiter.limit("10/minute")
+def update_current_user(
+    request: HttpRequest,
+    payload: AccountUpdateInput,
+    response: Response,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    if not password_hash.verify(payload.current_password.get_secret_value(), user.hashed_password):
+        raise HTTPException(status_code=401, detail="Senha atual incorreta.")
+
+    new_password = (
+        payload.new_password.get_secret_value() if payload.new_password is not None else None
+    )
+    renamed = payload.username != user.username
+
+    if new_password is None and not renamed:
+        raise HTTPException(
+            status_code=422, detail="Informe um novo usuário ou uma nova senha."
+        )
+    if new_password is not None and password_hash.verify(new_password, user.hashed_password):
+        raise HTTPException(
+            status_code=422, detail="A nova senha deve ser diferente da atual."
+        )
+
+    if renamed:
+        taken = session.scalar(
+            select(User).where(User.username == payload.username, User.id != user.id)
+        )
+        if taken is not None:
+            raise HTTPException(status_code=409, detail="Já existe um usuário com este nome.")
+        user.username = payload.username
+    if new_password is not None:
+        user.hashed_password = password_hash.hash(new_password)
+    session.commit()
+
+    if renamed:
+        issue_auth_cookie(response, user.username)
     return UserRead(username=user.username)
 
 

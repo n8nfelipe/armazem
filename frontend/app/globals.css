@@ -460,6 +460,8 @@ h1 { margin-bottom: 6px; font: 700 clamp(29px, 3.2vw, 40px)/1.15 var(--display);
 }
 
 .user-name { padding-left: 14px; border-left: 1px solid var(--line-strong); color: #55645a; font: 12px var(--mono); }
+a.user-name { text-decoration: none; }
+a.user-name:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .logout-button { padding: 5px 0 5px 5px; border: 0; background: transparent; color: #45564c; cursor: pointer; font-size: 12px; }
 .logout-button:hover { color: var(--red); text-decoration: underline; text-underline-offset: 3px; }
 .auth-loading { display: grid; min-height: 100vh; place-items: center; background: var(--paper); color: #59665d; font: 13px var(--mono); }

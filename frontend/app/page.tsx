@@ -179,6 +179,8 @@ export default function ProductsPage() {
         <Link className="nav-item" href="/purchase-orders">Pedidos</Link>
         <Link className="nav-item" href="/inventory">Estoque</Link>
         <Link className="nav-item" href="/replenishment">Agente</Link>
+        <div className="side-section-label">CONTA</div>
+        <Link className="nav-item" href="/account">Conta</Link>
         <div className="side-note">
           <span className="status-dot" />
           <span>Catálogo conectado</span>
@@ -194,7 +196,7 @@ export default function ProductsPage() {
       <main className="main-content" id="catalog">
         <header className="topbar">
           <div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Produtos</strong></div>
-          <div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><span className="user-name">{username}</span><button className="logout-button" onClick={() => void signOut()}>Sair</button></div>
+          <div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><Link className="user-name" href="/account">{username}</Link><button className="logout-button" onClick={() => void signOut()}>Sair</button></div>
         </header>
 
         <div className="content-wrap">

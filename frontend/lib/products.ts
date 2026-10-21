@@ -377,3 +377,20 @@ export async function logout(): Promise<void> {
   const response = await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
   if (!response.ok) throw await readError(response);
 }
+
+export type AccountUpdateInput = {
+  current_password: string;
+  username: string;
+  new_password?: string;
+};
+
+export async function updateAccount(input: AccountUpdateInput): Promise<CurrentUser> {
+  const response = await fetch(`${API_URL}/auth/me`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readError(response);
+  return response.json();
+}

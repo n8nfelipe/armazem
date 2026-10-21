@@ -156,12 +156,14 @@ export default function SalesPage() {
         <Link className="nav-item" href="/purchase-orders">Pedidos</Link>
         <Link className="nav-item" href="/inventory">Estoque</Link>
         <Link className="nav-item" href="/replenishment">Agente</Link>
+        <div className="side-section-label">CONTA</div>
+        <Link className="nav-item" href="/account">Conta</Link>
         <div className="side-note"><span className="status-dot" /><span>Catálogo conectado</span></div>
         <div className="sidebar-bottom"><span className="sidebar-rule" /><span className="sidebar-caption">REGISTRO DE VENDAS</span><span className="sidebar-edition">PAINEL DE OPERAÇÕES&nbsp; / &nbsp;04</span></div>
       </aside>
 
       <main className="main-content" id="sales">
-        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Vendas</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><span className="user-name">{username}</span><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
+        <header className="topbar"><div className="breadcrumb"><span>ESTOQUE</span><span className="crumb-slash">/</span><strong>Vendas</strong></div><div className="topbar-right"><AgentChat /><span className="topbar-date">CATÁLOGO&nbsp; · &nbsp;BR</span><Link className="user-name" href="/account">{username}</Link><button className="logout-button" onClick={() => void signOut()}>Sair</button></div></header>
         <div className="content-wrap">
           <section className="page-heading"><div><h1>Vendas</h1><p className="heading-copy">Registre saídas de produtos e acompanhe os valores vendidos.</p></div><div className="catalog-total"><span className="total-number">{sales.length.toString().padStart(2, "0")}</span><span>vendas</span></div></section>
           <section className="overview-strip" aria-label="Resumo das vendas"><div className="overview-cell"><span className="overview-label">VENDAS</span><strong>{sales.length.toString().padStart(2, "0")}</strong></div><div className="overview-cell"><span className="overview-label">VALOR LISTADO</span><strong>{money.format(revenue)}</strong></div><div className="overview-cell overview-context"><span className="overview-label">REGISTRO COMERCIAL</span><span>Os preços são preservados na data da venda</span></div><div className="overview-stamp"><span>AR</span><span>SAÍDA DE<br />PRODUTOS</span></div></section>
